@@ -1,12 +1,30 @@
-﻿using System;
+﻿using System.IO;
 using System.Runtime.InteropServices;
-using System.Windows;
 using System.Windows.Interop;
 
 namespace SimpleStickyNotes.Services
 {
+
     public class TrayIcon : IDisposable
     {
+        [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr LoadImage(
+            IntPtr hInst,
+            string lpszName,
+            uint uType,
+            int cxDesired,
+            int cyDesired,
+            uint fuLoad);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool DestroyIcon(IntPtr hIcon);
+
+        private IntPtr _iconHandle = IntPtr.Zero;
+
+        private const uint IMAGE_ICON = 1;
+        private const uint LR_LOADFROMFILE = 0x0010;
+        private const uint LR_DEFAULTSIZE = 0x0040;
+
         private const int WM_USER = 0x0400;
         private const int WM_TRAYMESSAGE = WM_USER + 1;
 
@@ -46,9 +64,38 @@ namespace SimpleStickyNotes.Services
 
         private static readonly IntPtr IDI_APPLICATION = new IntPtr(0x7F00);
 
-        public TrayIcon(string tooltip)
+        [DllImport("kernel32.dll")]
+        private static extern uint GetLastError();
+
+        public TrayIcon(string tooltip, string? iconPath = null)
         {
             CreateMessageWindow();
+
+            IntPtr iconHandle = LoadDefaultIcon();
+
+            IntPtr icon = LoadIcon(IntPtr.Zero, IDI_APPLICATION);
+
+            if (!string.IsNullOrWhiteSpace(iconPath) && File.Exists(iconPath))
+            {
+                var hIcon = LoadImage(
+                    IntPtr.Zero,
+                    iconPath,
+                    IMAGE_ICON,
+                    0,
+                    0,
+                    LR_LOADFROMFILE | LR_DEFAULTSIZE);
+
+                if (hIcon == IntPtr.Zero)
+                {
+                    uint err = GetLastError();
+                    MessageBox.Show($"LoadImage failed.\nPath:\n{iconPath}\nError: {err}");
+                }
+                else
+                {
+                    icon = hIcon;
+                    _iconHandle = hIcon;
+                }
+            }
 
             _data = new NotifyIconData
             {
@@ -57,11 +104,35 @@ namespace SimpleStickyNotes.Services
                 uID = 1,
                 uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP,
                 uCallbackMessage = WM_TRAYMESSAGE,
-                hIcon = LoadIcon(IntPtr.Zero, IDI_APPLICATION),
-                szTip = tooltip
+                hIcon = icon,
+                szTip = tooltip ?? "Tray Icon"
             };
 
+
+            if (!string.IsNullOrWhiteSpace(iconPath) && File.Exists(iconPath))
+            {
+                var hIcon = LoadImage(
+                    IntPtr.Zero,
+                    iconPath,
+                    IMAGE_ICON,
+                    0,
+                    0,
+                    LR_LOADFROMFILE | LR_DEFAULTSIZE);
+
+                if (hIcon != IntPtr.Zero)
+                {
+                    icon = hIcon;
+                    _iconHandle = hIcon;
+                }
+            }
+
             Shell_NotifyIcon(NIM_ADD, ref _data);
+            Shell_NotifyIcon(NIM_MODIFY, ref _data);
+        }
+
+        private static IntPtr LoadDefaultIcon()
+        {
+            return LoadIcon(IntPtr.Zero, IDI_APPLICATION);
         }
 
         private void CreateMessageWindow()
@@ -101,6 +172,13 @@ namespace SimpleStickyNotes.Services
         public void Dispose()
         {
             Shell_NotifyIcon(NIM_DELETE, ref _data);
+
+            if (_iconHandle != IntPtr.Zero)
+            {
+                DestroyIcon(_iconHandle);
+                _iconHandle = IntPtr.Zero;
+            }
+
             _source?.Dispose();
         }
     }

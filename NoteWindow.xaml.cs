@@ -15,6 +15,7 @@ namespace SimpleStickyNotes
         private readonly NoteModel _model;
         private bool _loaded = false;
         private const double CollapsedHeight = 30;
+        private bool _suppressNextWindowDoubleClick = false;
 
         public NoteWindow(NoteModel model)
         {
@@ -126,12 +127,59 @@ namespace SimpleStickyNotes
         // -----------------------------
         private void Window_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
+            if (_suppressNextWindowDoubleClick)
+            {
+                _suppressNextWindowDoubleClick = false;
+                e.Handled = true;
+                return;
+            }
+
             if (EditBox.Visibility == Visibility.Visible)
                 return;
 
             EnterEditMode();
         }
 
+        private void TitleText_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ClickCount == 2)
+            {
+                _suppressNextWindowDoubleClick = true;
+                e.Handled = true;
+                BeginTitleEdit();
+            }
+        }
+
+        private void BeginTitleEdit()
+        {
+            TitleText.Visibility = Visibility.Collapsed;
+            TitleEditor.Visibility = Visibility.Visible;
+
+            TitleEditor.Focus();
+            TitleEditor.SelectAll();
+        }
+
+        private void TitleEditor_LostFocus(object sender, RoutedEventArgs e)
+        {
+            EndTitleEdit();
+        }
+
+        private void TitleEditor_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter || e.Key == Key.Escape)
+            {
+                EndTitleEdit();
+                e.Handled = true;
+            }
+        }
+
+        private void EndTitleEdit()
+        {
+            TitleEditor.Visibility = Visibility.Collapsed;
+            TitleText.Visibility = Visibility.Visible;
+
+            NoteManager.SaveNotes();
+        }
 
         private void EnterEditMode()
         {

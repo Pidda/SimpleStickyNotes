@@ -10,7 +10,8 @@
         MouseDown="Window_MouseDown"
         MouseDoubleClick="Window_MouseDoubleClick"
         WindowState="Normal"
-        StateChanged="Window_StateChanged">
+        StateChanged="Window_StateChanged"
+        ShowInTaskbar="False">
 
     <Border CornerRadius="10"
             BorderThickness="1"
@@ -28,11 +29,26 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- TITLE -->
-                <TextBlock Text="{Binding Title}"
+                <!-- DISPLAY TITLE -->
+
+                <TextBlock x:Name="TitleText"
+                           Text="{Binding Title}"
                            VerticalAlignment="Center"
                            Margin="8,0"
-                           FontWeight="Bold"/>
+                           FontWeight="Bold"
+                           MouseLeftButtonDown="TitleText_PreviewMouseLeftButtonDown"/>
+
+                <!-- EDIT TITLE -->
+                <TextBox x:Name="TitleEditor"
+                         Text="{Binding Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Visibility="Collapsed"
+                         VerticalAlignment="Center"
+                         Margin="6,0"
+                         FontWeight="Bold"
+                         BorderThickness="0"
+                         Background="Transparent"
+                         LostFocus="TitleEditor_LostFocus"
+                         KeyDown="TitleEditor_KeyDown"/>
 
                 <!-- COLLAPSE -->
                 <Button x:Name="CollapseButton"

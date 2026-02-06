@@ -93,6 +93,47 @@ namespace SimpleStickyNotes.Services
             SaveNotes();
         }
 
+        public static List<TrayNoteInfo> GetTrayNoteList()
+        {
+            // Sorted, stable snapshot for UI
+            return Notes
+                .OrderBy(n => string.IsNullOrWhiteSpace(n.Title) ? "Note" : n.Title)
+                .Select(n => new TrayNoteInfo(
+                    string.IsNullOrWhiteSpace(n.Title) ? "Note" : n.Title,
+                    n.Id,
+                    n.IsVisible
+                ))
+                .ToList();
+        }
+
+        public static void ShowNote(System.Guid noteId)
+        {
+            var note = Notes.FirstOrDefault(n => n.Id == noteId);
+            if (note == null)
+            {
+                return;
+            }
+
+            note.IsVisible = true;
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (Windows.TryGetValue(note.Id, out var win))
+                {
+                    win.Show();
+                    win.Activate();
+                }
+                else
+                {
+                    // Ensure position is valid if you have ClampNoteToScreen(note)
+                    // ClampNoteToScreen(note);
+
+                    CreateWindow(note);
+                }
+            });
+
+            SaveNotes();
+        }
         private static void ClampNoteToScreen(NoteModel note)
         {
             var r = GetVirtualScreenRect();
@@ -280,25 +321,25 @@ namespace SimpleStickyNotes.Services
             }
         }
 
-        public static void ShowAllNotes()
-        {
-            foreach (var note in Notes)
-            {
-                note.IsVisible = true;
+        //public static void ShowAllNotes()
+        //{
+        //    foreach (var note in Notes)
+        //    {
+        //        note.IsVisible = true;
 
-                if (Windows.TryGetValue(note.Id, out var win))
-                {
-                    win.Show();
-                    win.Activate();
-                }
-                else
-                {
-                    CreateWindow(note);
-                }
-            }
+        //        if (Windows.TryGetValue(note.Id, out var win))
+        //        {
+        //            win.Show();
+        //            win.Activate();
+        //        }
+        //        else
+        //        {
+        //            CreateWindow(note);
+        //        }
+        //    }
 
-            SaveNotes();
-        }
+        //    SaveNotes();
+        //}
 
         public static void BringAllOnScreen()
         {

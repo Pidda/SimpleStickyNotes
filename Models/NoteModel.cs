@@ -14,6 +14,7 @@ namespace SimpleStickyNotes.Models
         public bool IsCollapsed { get; set; } = false;
         public double ExpandedHeight { get; set; } = 200;
 
+        public bool AutoHideCollapsedBar { get; set; } = true;
         public double X { get; set; } = 200;
         public double Y { get; set; } = 200;
         public double Width { get; set; } = 250;

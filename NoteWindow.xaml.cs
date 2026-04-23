@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Input;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using MessageBox = System.Windows.MessageBox;
+using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 
 namespace SimpleStickyNotes
 {
@@ -16,6 +17,9 @@ namespace SimpleStickyNotes
         private bool _loaded = false;
         private const double CollapsedHeight = 30;
         private bool _suppressNextWindowDoubleClick = false;
+        private const double AutoHiddenCollapsedHeight = 8;
+
+        private bool _isMouseOverCollapsedBar = false;
 
         public NoteWindow(NoteModel model)
         {
@@ -56,6 +60,25 @@ namespace SimpleStickyNotes
             }
         }
 
+        private void ShrinkCollapsedBar()
+        {
+            if (!_model.IsCollapsed)
+            {
+                return;
+            }
+
+            Height = AutoHiddenCollapsedHeight;
+        }
+
+        private void RestoreCollapsedBar()
+        {
+            if (!_model.IsCollapsed)
+            {
+                return;
+            }
+
+            Height = CollapsedHeight;
+        }
         private void Window_StateChanged(object sender, EventArgs e)
         {
             if (WindowState == WindowState.Maximized)
@@ -79,17 +102,30 @@ namespace SimpleStickyNotes
                 Collapse();
         }
 
+        //private void Collapse()
+        //{
+        //    _model.ExpandedHeight = Height;
+        //    Height = CollapsedHeight;
+
+        //    CollapseButton.Content = "▔";
+
+        //    ContentPanel.Visibility = Visibility.Collapsed;
+        //    ResizeMode = ResizeMode.NoResize;
+
+        //    _model.IsCollapsed = true;
+        //    NoteManager.SaveNotes();
+        //}
+
         private void Collapse()
         {
             _model.ExpandedHeight = Height;
-            Height = CollapsedHeight;
 
-            CollapseButton.Content = "▔";
+            _model.IsCollapsed = true;
+            Height = CollapsedHeight;
 
             ContentPanel.Visibility = Visibility.Collapsed;
             ResizeMode = ResizeMode.NoResize;
 
-            _model.IsCollapsed = true;
             NoteManager.SaveNotes();
         }
 
@@ -109,6 +145,8 @@ namespace SimpleStickyNotes
 
         private void Expand()
         {
+            _model.IsCollapsed = false;
+
             Height = _model.ExpandedHeight > CollapsedHeight
                 ? _model.ExpandedHeight
                 : 200;
@@ -116,11 +154,23 @@ namespace SimpleStickyNotes
             ContentPanel.Visibility = Visibility.Visible;
             ResizeMode = ResizeMode.CanResizeWithGrip;
 
-            CollapseButton.Content = "▁";
-
-            _model.IsCollapsed = false;
             NoteManager.SaveNotes();
         }
+
+        //private void Expand()
+        //{
+        //    Height = _model.ExpandedHeight > CollapsedHeight
+        //        ? _model.ExpandedHeight
+        //        : 200;
+
+        //    ContentPanel.Visibility = Visibility.Visible;
+        //    ResizeMode = ResizeMode.CanResizeWithGrip;
+
+        //    CollapseButton.Content = "▁";
+
+        //    _model.IsCollapsed = false;
+        //    NoteManager.SaveNotes();
+        //}
 
         // -----------------------------
         // DOUBLE CLICK TO ENTER EDIT MODE
@@ -138,6 +188,36 @@ namespace SimpleStickyNotes
                 return;
 
             EnterEditMode();
+        }
+
+        private void Window_MouseEnter(object sender, MouseEventArgs e)
+        {
+            if (!_model.IsCollapsed)
+            {
+                return;
+            }
+
+            if (!_model.AutoHideCollapsedBar)
+            {
+                return;
+            }
+
+            RestoreCollapsedBar();
+        }
+
+        private void Window_MouseLeave(object sender, MouseEventArgs e)
+        {
+            if (!_model.IsCollapsed)
+            {
+                return;
+            }
+
+            if (!_model.AutoHideCollapsedBar)
+            {
+                return;
+            }
+
+            ShrinkCollapsedBar();
         }
 
         private void TitleText_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -171,6 +251,19 @@ namespace SimpleStickyNotes
                 EndTitleEdit();
                 e.Handled = true;
             }
+        }
+
+        private void Sort_Click(object sender, RoutedEventArgs e)
+        {
+            _model.Items = _model.Items
+                .Where(i => i.IsChecked)
+                .Concat(_model.Items.Where(i => !i.IsChecked))
+                .ToList();
+
+            ItemsList.ItemsSource = null;
+            ItemsList.ItemsSource = _model.Items;
+
+            NoteManager.SaveNotes();
         }
 
         private void EndTitleEdit()
@@ -298,10 +391,31 @@ namespace SimpleStickyNotes
         protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
         {
             base.OnRenderSizeChanged(sizeInfo);
-            if (!_loaded) return;
+
+            if (!_loaded)
+            {
+                return;
+            }
+
+            if (_model.IsCollapsed)
+            {
+                _model.Width = Width;
+                _model.X = Left;
+                _model.Y = Top;
+                NoteManager.SaveNotes();
+                return;
+            }
 
             NoteManager.UpdateNotePositionSize(_model, Left, Top, Width, Height);
         }
+
+        //protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
+        //{
+        //    base.OnRenderSizeChanged(sizeInfo);
+        //    if (!_loaded) return;
+
+        //    NoteManager.UpdateNotePositionSize(_model, Left, Top, Width, Height);
+        //}
 
 
         // -----------------------------

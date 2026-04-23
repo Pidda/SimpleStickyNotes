@@ -11,7 +11,9 @@
         MouseDoubleClick="Window_MouseDoubleClick"
         WindowState="Normal"
         StateChanged="Window_StateChanged"
-        ShowInTaskbar="False">
+        ShowInTaskbar="False"
+        MouseEnter="Window_MouseEnter"
+        MouseLeave="Window_MouseLeave">
 
     <Border CornerRadius="10"
             BorderThickness="1"
@@ -26,6 +28,7 @@
                     <ColumnDefinition/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>   
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
@@ -59,15 +62,23 @@
                         Margin="2"
                         Click="Collapse_Click"/>
 
+                <!-- SORT -->
+                <Button Grid.Column="2"
+                        Content="⇅"
+                        Width="22"
+                        Height="22"
+                        Margin="2"
+                        Click="Sort_Click"
+                        ToolTip="Sort items"/>
 
                 <!-- CLOSE -->
-                <Button Grid.Column="2" Content="🗑"
+                <Button Grid.Column="3" Content="🗑"
                         Width="22"
                         Height="22"
                         Margin="2"
                         Click="Delete_Click"
                         ToolTip="Delete note"/>
-                <Button Grid.Column="3"
+                <Button Grid.Column="4"
                         Content="X"
                         Width="22"
                         Height="22"
